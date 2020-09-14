@@ -1,4 +1,5 @@
 use crate::dns::protocol::{DnsQuestion, DnsRecord, QueryType, ResultCode, TransientTtl};
+use std::env;
 use std::net::Ipv4Addr;
 
 pub struct Zone<'a> {
@@ -36,8 +37,18 @@ impl<'a> Zone<'a> {
 
     pub fn answer(&self, question: &DnsQuestion) -> Result<Option<DnsRecord>, ResultCode> {
         assert!(self.in_zone(&question.name));
-
         Ok(match question.qtype {
+            QueryType::TXT => {
+                if Ok(&question.name) == env::var("PDSN_TXT_NAME").as_ref() {
+                    Some(DnsRecord::TXT {
+                        domain: question.name.clone(),
+                        data: env::var("PDSN_TXT_DATA").unwrap_or_default(),
+                        ttl: TransientTtl(3600),
+                    })
+                } else {
+                    None
+                }
+            }
             QueryType::SOA => Some(self.get_soa_record()),
             QueryType::A => {
                 let parts: Vec<&str> = question.name.splitn(2, '.').collect();
