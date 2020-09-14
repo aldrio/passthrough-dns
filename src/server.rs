@@ -62,6 +62,9 @@ impl<'a> Server<'a> {
             let question = &req.questions[0];
             packet.questions.push(question.clone());
 
+            // Log
+            println!("{:?} {}", question.qtype, question.name);
+
             // Answer with first matching zone
             if let Some(zone) = self.zones.iter().find(|z| z.in_zone(&question.name)) {
                 match zone.answer(&question) {
